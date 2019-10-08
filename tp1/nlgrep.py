@@ -2,7 +2,7 @@
 
 import fileinput
 import sys
-from getopt import getopt
+from getopt import gnu_getopt
 import re
 
 ANSI_RESET = "\u001B[0m"
@@ -14,7 +14,7 @@ def coloreador(match):
 	return ANSI_RED+match.group(0)+ANSI_RESET
 
 
-opts, resto = getopt(sys.argv[1:],"spf:")
+opts, resto = gnu_getopt(sys.argv[1:],"spf:")
 
 if resto == []:
 	print("Indique o padrão a encontrar")
