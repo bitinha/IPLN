@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# Programa que dado uma expressão regular, irá devolver as frases ou parágrafos que façam match com esta.
+
+# O modo de pesquisa pode ser definido para frases com a flag -s ou para parágrafos com a flag -p
+# O modo de pesquisa por defeito é o modo de pesquisa por parágrafos
+
+# Um ficheiro sobre o qual se pretende fazer a pesquisa pode ser indicado apos a opção -f
+# Caso não seja indicado um ficheiro sobre o qual pesquisar, a pesquisa sera feita sobre o stdin
+
+
 import fileinput
 import sys
 from getopt import gnu_getopt
@@ -17,7 +26,9 @@ def coloreador(match):
 opts, resto = gnu_getopt(sys.argv[1:],"spf:")
 
 if resto == []:
-	print("Indique o padrão a encontrar")
+	print("É necessário indicar o padrão a encontrar.\n")
+	print("Também pode definir o modo de pesquisa através das flags -s e -p, que correspondem a frase e parágrafo, respetivamente.\n")
+	print("Caso pretenda, indique um ficheiro a pesquisar após a opção -f.")
 	exit()
 
 dop = dict(opts)
