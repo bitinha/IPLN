@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+
+
+import fileinput
+import re
+from getopt import gnu_getopt
+import sys
+import os.path
+#from zipfile import ZipFile
+
+from lxml import etree
+
+
+def printElement(element,action):
+	if(etree.QName(element.tag).localname == 'p' and action == "start"):
+		texto = element.text
+		if texto == None:
+			texto = ""
+
+		print(r"\par "+texto)
+
+
+def printSection(r,ops):
+
+	#html = etree.parse(ops+r).getroot()
+	html = etree.iterparse(ops+r,events=("start","end"))
+
+	for action, element in html:
+		printElement(element,action)
+
+
+
+def printLatex(spine,recursos,ops):
+	print(r"\begin{document}")
+
+	for section in spine:
+		printSection(recursos[section],ops)
+
+	print(r"\end{document}")
+
+
+
+
+def main():
+
+	opts, file = gnu_getopt(sys.argv[1:],"")
+
+	#folder = ZipFile(file[0],'r')
+
+
+	#co = folder.open('/META-INF/container.xml')
+	container = etree.parse(file[0] + "/META-INF/container.xml")
+
+	rc = container.getroot()
+
+	opf = file[0]+'/'+rc[0][0].get('full-path')
+	
+	ops=os.path.split(opf)[0] + '/'
+
+	ropf = etree.parse(opf).getroot()
+
+	metadata = ropf.find('{*}metadata')
+
+	title = metadata.find('{*}title').text
+
+
+
+	manifest = ropf.find('{*}manifest')
+	recursos = dict()
+	for element in manifest:
+		attrib = element.attrib
+		if (attrib["media-type"] == "application/xhtml+xml"):
+			recursos[attrib["id"]] = attrib["href"]
+
+
+
+	spine = ropf.find('{*}spine')
+	indice = list()
+	for element in spine:
+			indice.append(element.get("idref"))
+
+
+	printLatex(indice,recursos,ops)
+
+
+main()
+
+
+
+
+'''
+
+root = etree.Element("root")
+print(root.tag)
+
+root.append( etree.Element("child1") )
+
+child2 = etree.SubElement(root, "child2")
+child3 = etree.SubElement(root, "child3")
+
+print(etree.tostring(root, pretty_print=True))
+
+
+tree = etree.parse("history.stackexchange.com/Posts.xml")
+
+#print(len(tree.getroot()))
+#print(etree.tostring(tree.getroot()[0]))
+d = tree.getroot()[0].attrib
+print(d)
+'''
