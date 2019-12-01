@@ -184,7 +184,7 @@ def printSection(r,ops):
 
 
 
-def printLatex(spine,recursos,ops):
+def printLatex(spine,ops):
 	print(r"\documentclass{book}")
 	print(r"\usepackage{graphicx}")
 	print(r"\usepackage{float}")
@@ -195,7 +195,7 @@ def printLatex(spine,recursos,ops):
 	print(r"\begin{document}")
 
 	for section in spine:
-		printSection(recursos[section],ops)
+		printSection(section,ops)
 		print(r"\newpage")
 	print(r"\end{document}")
 
@@ -207,22 +207,21 @@ def main():
 	opts, file = gnu_getopt(sys.argv[1:],"")
 
 	#folder = ZipFile(file[0],'r')
-
+	folder = file[0]
 
 	#co = folder.open('/META-INF/container.xml')
-	container = etree.parse(file[0] + "/META-INF/container.xml")
+	container = etree.parse(folder + "/META-INF/container.xml")
 
 	rc = container.getroot()
 
-	opf = file[0]+'/'+rc[0][0].get('full-path')
+	opf = folder+'/'+rc[0][0].get('full-path')
 	
 	ops=os.path.split(opf)[0] + '/'
 
 	ropf = etree.parse(opf).getroot()
 
-	metadata = ropf.find('{*}metadata')
-
-	title = metadata.find('{*}title').text
+	#metadata = ropf.find('{*}metadata')
+	#title = metadata.find('{*}title').text
 
 
 
@@ -238,10 +237,10 @@ def main():
 	spine = ropf.find('{*}spine')
 	indice = list()
 	for element in spine:
-			indice.append(element.get("idref"))
+			indice.append(recursos[element.get("idref")])
 
 
-	printLatex(indice,recursos,ops)
+	printLatex(indice,ops)
 
 
 main()

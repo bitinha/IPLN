@@ -9,7 +9,7 @@ from lxml import etree
 
 opts, file = gnu_getopt(sys.argv[1:],"")
 portugal=0
-tree = etree.parse(file[0])#("history.stackexchange.com/Posts.xml")
+tree = etree.parse(file[0]) #("history.stackexchange.com/Posts.xml")
 root = tree.getroot()
 for element in root:
 	if element.get('PostTypeId') == '1':
