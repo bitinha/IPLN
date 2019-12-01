@@ -11,13 +11,167 @@ import os.path
 from lxml import etree
 
 
+escrita = False
+titulo = False
+caracteresReservados = "[$\\_&]"
+
+'''
+seccao = ""
+div = ""
+
 def printElement(element,action):
-	if(etree.QName(element.tag).localname == 'p' and action == "start"):
+
+	global seccao, div
+
+
+	tag = etree.QName(element.tag).localname
+	if(tag == 'p' and action == "start"):
 		texto = element.text
 		if texto == None:
 			texto = ""
 
 		print(r"\par "+texto)
+	elif tag == "section" and action == "start":# and element.xpath('./@*[local-name() = $name]',name = "type")[0] == "bodymatter chapter":
+		tipo = element.xpath('./@*[local-name() = $name]',name = "type")
+		if len(tipo) > 0 and tipo[0] == "bodymatter chapter":
+			seccao = "capitulo"
+	elif tag == "section" and action == "end":
+		seccao = ""
+	elif tag == "div" and action == "start":
+		if element.get("class") == "title-block-rw":
+			div = "titulo"
+	elif tag == "div" and action == "end":
+		div = ""
+	elif tag == "h1" and div == "titulo" and seccao == "capitulo" and action == "start":
+		print(r"\chapter*{" + element.text + "}")
+
+'''
+
+def substituiCaracteresReservados(match):
+	return '\\'+ match.group(0)
+
+
+
+def printElement(element,action,ops):
+
+	global escrita
+	global titulo
+	global caracteresReservados
+
+	#Pega no nome local do element a processar
+	tag = etree.QName(element.tag).localname
+
+	# Parágrafo --------
+	if(tag == 'p' and action == "start"):
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, texto)
+		escrita = True
+
+		# Ver as classes a que pertence e tentar adivinhar se é um titulo
+		classe = element.xpath('./@*[local-name() = $name]',name = "class")
+
+		if (len(classe) > 0 and re.search("title",classe[0])):
+			print(r"\section*{"+texto)  
+			titulo = True
+		else:
+			print(r"\par "+texto)
+	if(tag == 'p' and action == "end"):
+		escrita = False
+		if titulo:
+			titulo = False
+			print(r"}")
+
+	# Headers ---------
+	elif tag == "h1" and action == "start":
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, texto)
+		escrita = True
+		print(r"\section*{" + texto + "}")
+	elif tag == "h1" and action == "end":
+		escrita = False
+
+	elif tag == "h2" and action == "start":
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, texto)
+		escrita = True
+		print(r"\subsection*{" + texto + "}")
+	elif tag == "h2" and action == "end":
+		escrita = False
+
+	elif tag == "h3" and action == "start":
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, texto)
+		escrita = True
+		print(r"\subsubsection*{" + texto + "}")
+	elif tag == "h3" and action == "end":
+		escrita = False
+
+
+	# Imagens ----------
+	elif tag == "img" and action == "start":
+		src = element.get("src")
+		print(r"\begin{figure}[H]\includegraphics[width=\textwidth]{"+ ops + src +r"}\end{figure}")
+		cauda = element.tail
+		if cauda == None:
+			cauda = ""
+		if escrita:
+			print(re.sub(caracteresReservados, substituiCaracteresReservados, cauda))
+	# Footnotes -------- 
+
+	elif tag == "span" and action == "start" and escrita:
+		cauda = element.tail
+		if cauda == None:
+			cauda = ""
+		#if element.get("class") == "ref-note-rw":
+		#	print(f"\footnote[{fn}]")
+		#	fn = fn + 1
+
+		print(re.sub(caracteresReservados, substituiCaracteresReservados, cauda))
+		#imprimir tails de tudo enquanto se escreve
+
+	#italico
+	elif tag == "i" and escrita:
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = print(r"\textit{"+re.sub(caracteresReservados, substituiCaracteresReservados, texto) + r"}")
+		cauda = element.tail
+		if cauda == None:
+			cauda = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, cauda)
+
+	#negrito
+	elif tag == "b" and escrita:
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = print(r"\textbf{"+re.sub(caracteresReservados, substituiCaracteresReservados, texto) + r"}")
+		cauda = element.tail
+		if cauda == None:
+			cauda = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, cauda)
+
+	# Qualquer outro elemento - escreve caso seja suposto
+	elif escrita: 
+		texto = element.text
+		if texto == None:
+			texto = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, texto)
+		cauda = element.tail
+		if cauda == None:
+			cauda = ""
+		texto = re.sub(caracteresReservados, substituiCaracteresReservados, cauda)
+
+
+
 
 
 def printSection(r,ops):
@@ -26,16 +180,23 @@ def printSection(r,ops):
 	html = etree.iterparse(ops+r,events=("start","end"))
 
 	for action, element in html:
-		printElement(element,action)
+		printElement(element,action,ops)
 
 
 
 def printLatex(spine,recursos,ops):
+	print(r"\documentclass{book}")
+	print(r"\usepackage{graphicx}")
+	print(r"\usepackage{float}")
+	#print(r"\usepackage[T1]{fontenc}")
+	#print(r"\usepackage[utf8]{inputenc}")
+
+
 	print(r"\begin{document}")
 
 	for section in spine:
 		printSection(recursos[section],ops)
-
+		print(r"\newpage")
 	print(r"\end{document}")
 
 
